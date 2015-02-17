@@ -2,7 +2,7 @@
 /**
  * Simple INI Configuration Wrapper
  * 
- * @author Daniel Èekan <djdaca@gmail.com>
+ * @author Daniel ï¿½ekan <djdaca@gmail.com>
  * @version 1.0  
  **/
  
@@ -44,8 +44,8 @@ class Configuration
 	/**
 		Easter for static get INI section
 		
-		@method string $name section name
-		@param string $var config var
+		@param string $name section name
+		@param string $arguments config var
 		@return mixed
 	*/
 	public static function __callStatic($name, $arguments)
@@ -58,10 +58,10 @@ class Configuration
 		
 		@return \Configuration $_instance
 	*/
-	public static function getInstance()
+	public static function getInstance($config = array())
 	{
 		if( self::$_instance === NULL ) {
-			self::$_instance = new self();
+			self::$_instance = new self($config);
 		}
 		return self::$_instance;
 	}
@@ -97,7 +97,12 @@ class Configuration
 	{
 		if( file_exists($file) )
 		{
-			$this->_config = array_merge($this->_config, parse_ini_file($file, true));
+			$array = parse_ini_file($file, true);
+			$section = array();
+			foreach($array as $key => $row) {
+				$section[$key] = $this->_ini2extend($row);
+			}
+			$this->_config = array_merge($this->_config, $section);
 			return true;
 		}
 		return false;
@@ -115,7 +120,10 @@ class Configuration
 		if (isset( $this->_config[$name] ) )
 		{
 			$section = $this->_config[$name];
-			return ( $var && isset( $section[$var] ) )? $section[$var] : $section;
+			if( $var ) {
+				return  isset( $section[$var] )? $section[$var] : NULL;
+			}
+			return $section;
 		}
 		return NULL;
 	}
@@ -148,20 +156,6 @@ class Configuration
 	*/
 	public function save($file)
 	{
-		$res = array();
-		foreach($this->_config as $key => $val)
-		{
-			if(is_array($val))
-			{
-				$res[] = "[$key]";
-				foreach($val as $skey => $sval)
-				{ 
-					$res[] = $skey ."=".(is_numeric($sval) ? $sval : '"'.$sval.'"');
-				}
-			} else {
-				$res[] = $key."=".(is_numeric($val) ? $val : '"'.$val.'"');
-			}
-		}
 		if (!defined('PHP_EOL')) {
 			switch (strtoupper(substr(PHP_OS, 0, 3))) {
 				// Windows
@@ -177,6 +171,86 @@ class Configuration
 					define('PHP_EOL', "\n");
 			}
 		}
-		return file_put_contents($file, implode(PHP_EOL, $res));
+		return file_put_contents($file, $this->_section2ini($this->_config));
+	}
+	
+	private function _ini2extend($array)
+	{
+		$returnArray = array();
+		if (is_array($array)) {
+			foreach ($array as $key => $value) {
+				if (is_array($value)) {
+					$array[$key] = $this->_ini2extend($value);
+				}
+				$x = explode('.', $key);
+				if (!empty($x[1])) {
+					$x = array_reverse($x, true);
+					if (isset($returnArray[$key])) {
+						unset($returnArray[$key]);
+					}
+					if (!isset($returnArray[$x[0]])) {
+						$returnArray[$x[0]] = array();
+					}
+					$first = true;
+					foreach ($x as $k => $v) {
+						if ($first === true) {
+							$b = $array[$key];
+							$first = false;
+						}
+						$b = array($v => $b);
+					}
+					$returnArray[$x[0]] = array_merge_recursive($returnArray[$x[0]], $b[$x[0]]);
+				} else {
+					$returnArray[$key] = $array[$key];
+				}
+			}
+		}
+		return $returnArray;
+	}
+	
+	private function _section2ini(array $a, $parent = NULL)
+	{
+		$out = '';
+		foreach ($a as $s => $c) {
+			$out .= '[' . $s . ']' . PHP_EOL;
+			$out .= $this->_array2ini($c);
+			$out .= PHP_EOL;
+		}
+		return $out;
+	}
+	
+	private function _array2ini(array $a, $parent = NULL)
+	{
+		$out = '';
+		foreach ($a as $k => $v)
+		{
+			if( $parent && $this->_isArrSeq($a) && count($a) > 1 ) {
+				$k = $parent . '[]';
+			} elseif( $parent ) {
+				$k = $parent.'.'.$k;
+			}
+			if (is_array($v))
+			{
+				$out .= $this->_array2ini($v, $k);
+			} else {
+				$out .= $k." = " ;
+				if (is_numeric($v) || is_float($v)) {
+					$out .= "$v";
+				} elseif (is_bool($v)) {
+					$out .= ($v===true) ? 1 : 0;
+				} elseif (is_string($v)) {
+					$out .= "'".addcslashes($v, "'")."'";
+				} else {
+					$out .= "$v";
+				}
+				$out .= PHP_EOL;
+			}
+		}
+		return $out;
+	}
+	
+	private function _isArrSeq($arr)
+	{
+		return array_keys($arr) == range(0, count($arr) - 1);
 	}
 }
