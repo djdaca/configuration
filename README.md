@@ -6,6 +6,7 @@ Configuration class provide parsing and writing extended INI
 API
 --------------
 $Config = Configuration::getInstance();
+
 $Config->addConfigFile('/config.ini');
 
 .....
@@ -45,4 +46,6 @@ can write multiple levels of key by dot like:
 
 key1.key2.key3 = value
 
-This will be translated to array('key1' => array('key2' => array('key3' => 'value')));
+This will be translated to:
+
+array('key1' => array('key2' => array('key3' => 'value')));
