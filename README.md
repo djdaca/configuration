@@ -7,25 +7,35 @@ API
 --------------
 $Config = Configuration::getInstance();
 $Config->addConfigFile('/config.ini');
+
 .....
 config.ini
 [section]
 var1=1
 .....
+
 $var = Configuration::section('var');
+
 or ...
+
 $var = $Config->section('var');
+
 or ...
+
 $var = $Config->getSection('section', 'var');
 
 and if you want modify config just call
+
 $Config->set('section', array('var' => 2));
 
 Simple not ? :)
+
 .....
+
 You can export or import by methods $Config->export() and $Config->import ($config)
 
 Best of end
+
 If u want modify config - you can write array to ini file by method $Config->write($file);
 
 INI
