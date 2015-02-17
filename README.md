@@ -10,9 +10,13 @@ $Config = Configuration::getInstance();
 $Config->addConfigFile('/config.ini');
 
 .....
+
 config.ini
+
 [section]
+
 var1=1
+
 .....
 
 $var = Configuration::section('var');
