@@ -11,12 +11,12 @@ class Configuration
 	
 	/**
 		@var array $_config
-	*/
+	**/
 	private $_config = array();
 	
 	/**
 		@var mixed instance of Configuration or NULL
-	*/
+	**/
 	private static $_instance;
 	
 	/**
@@ -34,11 +34,14 @@ class Configuration
 		
 		@method string $name section name
 		@param string $var config var
+		@param mixed $default default value from config
 		@return mixed
-	*/
+	**/
 	public function __call($name, $arguments)
 	{
-		return $this->getSection( $name, isset($arguments[0])? $arguments[0] : NULL );
+		$var = isset($arguments[0])? $arguments[0] : NULL;
+		$default = isset($arguments[1])? $arguments[1] : NULL;
+		return $this->getSection( $name, $var, $default );
 	}
 	
 	/**
@@ -46,18 +49,21 @@ class Configuration
 		
 		@param string $name section name
 		@param string $arguments config var
+		@param mixed $default default value from config
 		@return mixed
-	*/
+	**/
 	public static function __callStatic($name, $arguments)
 	{
-		return self::getInstance()->getSection( $name, isset($arguments[0])? $arguments[0] : NULL );
+		$var = isset($arguments[0])? $arguments[0] : NULL;
+		$default = isset($arguments[1])? $arguments[1] : NULL;
+		return self::getInstance()->getSection( $name, $var, $default );
 	}
 	
 	/**
 		Get static instance of configuration
 		
 		@return \Configuration $_instance
-	*/
+	**/
 	public static function getInstance($config = array())
 	{
 		if( self::$_instance === NULL ) {
@@ -70,7 +76,7 @@ class Configuration
 		Export config
 		
 		@return array
-	*/
+	**/
 	public function export()
 	{
 		return $this->_config;
@@ -81,7 +87,7 @@ class Configuration
 		
 		@param $config
 		@return void
-	*/
+	**/
 	public function import($config)
 	{
 		$this->_config = $config;
@@ -92,7 +98,7 @@ class Configuration
 		
 		@param string $file
 		@return void
-	*/
+	**/
 	public function addConfigFile($file)
 	{
 		if( file_exists($file) )
@@ -114,18 +120,30 @@ class Configuration
 		@param string $name section name
 		@param string $var config var
 		@return mixed
-	*/
-	public function getSection($name, $var = NULL)
+	**/
+	public function getSection($name, $var = NULL, $default = NULL)
 	{
 		if (isset( $this->_config[$name] ) )
 		{
 			$section = $this->_config[$name];
 			if( $var ) {
-				return  isset( $section[$var] )? $section[$var] : NULL;
+				return  isset( $section[$var] )? $section[$var] : $default;
+			}
+			if( is_array($default) && $default ) {
+				$section = array_merge($default, $section);
 			}
 			return $section;
+		} elseif( strpos($name, ':') !== false )
+		{
+			// možný alias
+			list($alias, $type) = explode(':', $name);
+			foreach( array_keys($this->_config) as $key ) {
+				if( preg_match('/^'.preg_quote($alias).':(.*)$/', $key, $result) ) {
+					return $this->getSection($result[1].':'.$type, $var, $default);
+				}
+			}
 		}
-		return NULL;
+		return $default;
 	}
 	
 	/**
@@ -135,7 +153,7 @@ class Configuration
 		@param string $value config value
 		@param string $section config section
 		@return void
-	*/
+	**/
 	public function set($var, $value, $section = NULL)
 	{
 		if( $section && isset( $this->_config[$section] ) )
@@ -153,7 +171,7 @@ class Configuration
 		@param string $value config value
 		@param string $section config section
 		@return void
-	*/
+	**/
 	public function save($file)
 	{
 		if (!defined('PHP_EOL')) {
@@ -174,38 +192,36 @@ class Configuration
 		return file_put_contents($file, $this->_section2ini($this->_config));
 	}
 	
-	private function _ini2extend($array)
+	private function _ini2extend(array $a)
 	{
-		$returnArray = array();
-		if (is_array($array)) {
-			foreach ($array as $key => $value) {
-				if (is_array($value)) {
-					$array[$key] = $this->_ini2extend($value);
+		$out = array();
+		foreach ($a as $k => $v) {
+			if (is_array($v)) {
+				$a[$k] = $this->_ini2extend($v);
+			}
+			$x = explode('.', $k);
+			if (!empty($x[1])) {
+				$x = array_reverse($x, true);
+				if (isset($out[$k])) {
+					unset($out[$k]);
 				}
-				$x = explode('.', $key);
-				if (!empty($x[1])) {
-					$x = array_reverse($x, true);
-					if (isset($returnArray[$key])) {
-						unset($returnArray[$key]);
-					}
-					if (!isset($returnArray[$x[0]])) {
-						$returnArray[$x[0]] = array();
-					}
-					$first = true;
-					foreach ($x as $k => $v) {
-						if ($first === true) {
-							$b = $array[$key];
-							$first = false;
-						}
-						$b = array($v => $b);
-					}
-					$returnArray[$x[0]] = array_merge_recursive($returnArray[$x[0]], $b[$x[0]]);
-				} else {
-					$returnArray[$key] = $array[$key];
+				if (!isset($out[$x[0]])) {
+					$out[$x[0]] = array();
 				}
+				$first = true;
+				foreach ($x as $xv) {
+					if ($first === true) {
+						$b = $a[$k];
+						$first = false;
+					}
+					$b = array($xv => $b);
+				}
+				$out[$x[0]] = array_merge_recursive($out[$x[0]], $b[$x[0]]);
+			} else {
+				$out[$k] = $a[$k];
 			}
 		}
-		return $returnArray;
+		return $out;
 	}
 	
 	private function _section2ini(array $a, $parent = NULL)
@@ -249,8 +265,8 @@ class Configuration
 		return $out;
 	}
 	
-	private function _isArrSeq($arr)
+	private function _isArrSeq($a)
 	{
-		return array_keys($arr) == range(0, count($arr) - 1);
+		return array_keys($a) == range(0, count($a) - 1);
 	}
 }
