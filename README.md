@@ -1,4 +1,4 @@
-PHP Simple INI Configuration Wrapper
+PHP Simple INI Wrapper
 ==============
 
 Configuration class provide parsing and writing extended INI
