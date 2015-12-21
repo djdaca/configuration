@@ -7,7 +7,7 @@ API
 --------------
 $INI = Ini::getInstance();
 
-$INI->addConfigFile('/config.ini');
+$INI->addFile('/config.ini');
 
 .....
 
