@@ -5,9 +5,9 @@ Configuration class provide parsing and writing extended INI
 
 API
 --------------
-$Config = Configuration::getInstance();
+$INI = Ini::getInstance();
 
-$Config->addConfigFile('/config.ini');
+$INI->addConfigFile('/config.ini');
 
 .....
 
@@ -19,29 +19,29 @@ var1=1
 
 .....
 
-$var = Configuration::section('var');
+$var = Ini::section('var');
 
 or ...
 
-$var = $Config->section('var');
+$var = $INI->section('var');
 
 or ...
 
-$var = $Config->getSection('section', 'var');
+$var = $INI->getSection('section', 'var');
 
 and if you want modify config just call
 
-$Config->set('section', array('var' => 2));
+$INI->set('section', array('var' => 2));
 
-Simple not ? :)
+Simple - or not ? :)
 
 .....
 
-You can export or import by methods $Config->export() and $Config->import ($config)
+You can export or import by methods $INI->export() and $INI->import ($config)
 
 Best of end
 
-If u want modify config - you can write array to ini file by method $Config->write($file);
+If u want modify config - you can write array to ini file by method $INI->write($file);
 
 INI
 --------------
