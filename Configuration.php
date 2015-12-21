@@ -90,7 +90,12 @@ class Configuration
 	**/
 	public function import($config)
 	{
-		$this->_config = $config;
+		if( is_string($config) ) {
+			$config = parse_ini_string($config, true);
+		}
+		if($config) {
+			$this->_config = $config;
+		}
 	}
 	
 	/**
@@ -190,6 +195,11 @@ class Configuration
 			}
 		}
 		return file_put_contents($file, $this->_section2ini($this->_config));
+	}
+	
+	public function __toString()
+	{
+		return $this->_section2ini($this->_config);
 	}
 	
 	private function _ini2extend(array $a)
