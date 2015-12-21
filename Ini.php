@@ -104,7 +104,7 @@ class Ini
 		@param string $file
 		@return void
 	**/
-	public function addConfigFile($file)
+	public function addFile($file)
 	{
 		if( file_exists($file) )
 		{
