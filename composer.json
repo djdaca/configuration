@@ -1,5 +1,5 @@
 {
-    "name": "djdaca/configuration",
+    "name": "djdaca/ini",
     "description": "Simple INI Configuration Wrapper",
     "require": {
         "php": ">=5.3.0"
