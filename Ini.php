@@ -227,6 +227,9 @@ class Ini
 					$b = array($xv => $b);
 				}
 				$out[$x[0]] = array_merge_recursive($out[$x[0]], $b[$x[0]]);
+			} elseif( is_string($a[$k]) && substr(trim($a[$k]), 0, 3) == 'new' ) {
+				$clazz = substr(trim($a[$k]), 4);
+				$out[$k] = new $clazz;
 			} else {
 				$out[$k] = $a[$k];
 			}
@@ -266,6 +269,8 @@ class Ini
 					$out .= ($v===true) ? 1 : 0;
 				} elseif (is_string($v)) {
 					$out .= "'".addcslashes($v, "'")."'";
+				} elseif (get_class($v)) {
+					$out .= "new ".get_class($v);
 				} else {
 					$out .= "$v";
 				}
