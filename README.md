@@ -15,7 +15,7 @@ config.ini
 
 [section]
 
-var1=1
+var=1
 
 .....
 
